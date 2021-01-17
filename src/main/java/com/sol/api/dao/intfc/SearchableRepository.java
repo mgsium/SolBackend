@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.lucene.search.Query;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.search.FullTextSession;
 import org.hibernate.search.Search;
 import org.hibernate.search.SearchFactory;
@@ -15,11 +16,17 @@ import com.sol.api.model.Lesson;
 
 public abstract class SearchableRepository<T, IdType> extends Repository<T, IdType> implements Searchable<T, IdType> {
 	
+	private boolean isIndexed = false;
+	
 	@SuppressWarnings("unchecked")
 	public List<Lesson> searchForLessons(String searchString, String targetFieldName, Class<T> entityClass) {
 		try(Session session = HibernateSessionHandler.getHibernateSession()) {
 			// Get Full Text Session
 			FullTextSession fullTextSession = Search.getFullTextSession(session);
+			if (!this.isIndexed) {
+				fullTextSession.createIndexer().startAndWait();
+				this.isIndexed = true;
+			}
 			// Get Query Builder
 			SearchFactory searchFactory = fullTextSession.getSearchFactory();
 			QueryBuilder queryBuilder = searchFactory.buildQueryBuilder().forEntity(entityClass).get();
@@ -29,6 +36,9 @@ public abstract class SearchableRepository<T, IdType> extends Repository<T, IdTy
 			// Execute Query
 			List<Lesson> lessons = fullTextSession.createFullTextQuery(luceneQuery).list();
 			return lessons;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ArrayList<>();
 		}
 	}
 	
@@ -43,6 +53,19 @@ public abstract class SearchableRepository<T, IdType> extends Repository<T, IdTy
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ArrayList<>();
+		}
+	}
+	
+	public void indexLesson(Lesson lesson) {
+		Transaction tx = null;
+		try(Session session = HibernateSessionHandler.getHibernateSession()) {
+			FullTextSession fullTextSession = Search.getFullTextSession(session);
+			tx = fullTextSession.beginTransaction();
+			fullTextSession.index(lesson);
+			tx.commit();
+			session.close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	

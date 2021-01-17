@@ -40,6 +40,7 @@ public class LessonController {
 		List<Question> questions = lesson.getQuestions();
 		lesson.setQuestions(new ArrayList<Question>());
 		boolean insertionWasSuccessful = lessonRepo.insertObject(lesson);
+		lessonRepo.indexLesson(lesson);
 		questions.forEach(q -> { q.setLesson(lesson); questionRepo.insertObject(q); });
 		return insertionWasSuccessful;
 	}
@@ -51,7 +52,6 @@ public class LessonController {
 	
 	@GetMapping(path = "/get/{lesson_id}")
 	public Lesson getLesson(@PathVariable("lesson_id") String lesson_id) {
-		System.out.println(lesson_id);
 		Lesson lesson = lessonRepo.retrieveObject(lesson_id, Lesson.class).orElse(null);
 		// TODO: Change this
 		if (lesson != null) lesson.getQuestions().forEach( q -> { q.setLesson(null); });
