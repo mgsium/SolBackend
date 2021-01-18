@@ -34,15 +34,16 @@ public class LessonController {
 	}
 	
 	@PostMapping(path = "/new")
-	public boolean createLesson(@Valid @NotNull @RequestBody Lesson lesson) {
-		lesson.setId(lessonRepo.generateId());
+	public String createLesson(@Valid @NotNull @RequestBody Lesson lesson) {
+		String lessonId = lessonRepo.generateId();
+		lesson.setId(lessonId);
 		lesson.setTimestamp(new Timestamp(System.currentTimeMillis()));
 		List<Question> questions = lesson.getQuestions();
 		lesson.setQuestions(new ArrayList<Question>());
 		boolean insertionWasSuccessful = lessonRepo.insertObject(lesson);
 		lessonRepo.indexLesson(lesson);
 		questions.forEach(q -> { q.setLesson(lesson); questionRepo.insertObject(q); });
-		return insertionWasSuccessful;
+		return "redirect:https://www.learnwithsol.com/confirm/" + lessonId;
 	}
 	
 	@PostMapping(path = "/question/new/{lesson_id}")
