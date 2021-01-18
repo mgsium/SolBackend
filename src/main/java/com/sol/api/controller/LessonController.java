@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.sol.api.dao.conc.LessonRepository;
 import com.sol.api.dao.conc.QuestionRepository;
@@ -34,16 +35,16 @@ public class LessonController {
 	}
 	
 	@PostMapping(path = "/new")
-	public String createLesson(@Valid @NotNull @RequestBody Lesson lesson) {
+	public ModelAndView createLesson(@Valid @NotNull @RequestBody Lesson lesson) {
 		String lessonId = lessonRepo.generateId();
 		lesson.setId(lessonId);
 		lesson.setTimestamp(new Timestamp(System.currentTimeMillis()));
 		List<Question> questions = lesson.getQuestions();
 		lesson.setQuestions(new ArrayList<Question>());
-		boolean insertionWasSuccessful = lessonRepo.insertObject(lesson);
+		lessonRepo.insertObject(lesson);
 		lessonRepo.indexLesson(lesson);
 		questions.forEach(q -> { q.setLesson(lesson); questionRepo.insertObject(q); });
-		return "redirect:https://www.learnwithsol.com/confirm/" + lessonId;
+		return new ModelAndView("redirect:https://www.learnwithsol.com/confirm/" + lessonId);
 	}
 	
 	@PostMapping(path = "/question/new/{lesson_id}")
